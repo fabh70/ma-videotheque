@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma Vidéothèque</title>
+<style>
+  :root {
+    --bg: #111111; --card: #1f1f1f; --card-hover: #262626; --search: #2a2a2a;
+    --red: #e50914; --text: #f2f2f2; --muted: #9a9a9a; --blue: #1e88e5; --ok: #2e9e5b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh;
+         font-family: "Segoe UI", Inter, Helvetica, Arial, sans-serif; border-top: 1px solid #2a1212; }
+
+  .version { position: fixed; top: 14px; right: 14px; z-index: 5; color: var(--text);
+             font-weight: 700; font-size: .95rem; line-height: 1.2; text-align: right; }
+  .version span { display: block; color: var(--muted); font-weight: 400; font-size: .75rem; }
+  .logo { height: 46px; width: 46px; vertical-align: middle; margin-left: 12px; }
+  .gear { position: fixed; top: 14px; left: 14px; width: 46px; height: 46px; border-radius: 50%;
+          border: none; background: var(--search); color: var(--text); font-size: 22px; cursor: pointer;
+          z-index: 5; transition: transform .3s, background .15s; }
+  .gear:hover { background: #3a3a3a; transform: rotate(60deg); }
+
+  header { text-align: center; padding: 32px 20px 10px; }
+  h1 { color: var(--red); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.5px; }
+
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+  .tab { background: var(--search); color: var(--muted); border: none; border-radius: 999px;
+         padding: 10px 20px; cursor: pointer; font-size: .95rem; font-weight: 600; }
+  .tab:hover { color: var(--text); }
+  .tab.actif { background: var(--red); color: #fff; }
+
+  .genres { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 14px auto 0;
+            max-width: 980px; padding: 0 20px; }
+  .chip { background: var(--search); color: var(--muted); border: none; border-radius: 999px;
+          padding: 6px 13px; font-size: .85rem; cursor: pointer; }
+  .chip:hover { color: var(--text); }
+  .chip.actif { background: var(--blue); color: #fff; }
+
+  .barre { display: flex; justify-content: center; margin-top: 18px; }
+  .search { width: min(560px, 90vw); padding: 14px 22px; background: var(--search); border: none;
+            border-radius: 999px; color: var(--text); font-size: 1rem; outline: none; }
+  .search::placeholder { color: #8a8a8a; }
+  .compte { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 12px; min-height: 1.2em; }
+
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 22px; padding: 26px 30px 60px; }
+  .carte { background: var(--card); border-radius: 12px; overflow: hidden; display: flex;
+           flex-direction: column; transition: transform .15s, background .15s; }
+  .carte:hover { transform: translateY(-3px); background: var(--card-hover); }
+  .poster { position: relative; }
+  .affiche { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2b2b2b; }
+  .affiche.vide { display: flex; align-items: center; justify-content: center; color: #666; font-size: .9rem; }
+  .play-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+               width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+               background: rgba(229, 9, 20, .92); color: #fff; font-size: 24px; padding-left: 5px;
+               opacity: 0; transition: opacity .15s, transform .15s, background .15s;
+               box-shadow: 0 6px 20px rgba(0, 0, 0, .6); }
+  .poster:hover .play-card { opacity: 1; }
+  .play-card:hover { background: #ff1f2b; transform: translate(-50%, -50%) scale(1.08); }
+  .pied { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .titre { font-weight: 700; font-size: 1.05rem; line-height: 1.25; display: -webkit-box;
+           -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .titre.deja-vu { color: var(--red); }
+  .sous { color: var(--muted); font-size: .85rem; }
+  .bas { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .vu { color: var(--ok); font-size: .85rem; font-weight: 600; }
+  .btn-infos { background: #0b0b0b; color: var(--text); border: none; border-radius: 6px;
+               padding: 7px 12px; font-size: .9rem; cursor: pointer; display: inline-flex;
+               align-items: center; gap: 8px; margin-left: auto; }
+  .btn-infos:hover { background: #000; }
+  .icone { background: var(--blue); color: #fff; border-radius: 3px; width: 16px; height: 16px;
+           font-size: .7rem; font-weight: 700; display: inline-flex; align-items: center;
+           justify-content: center; font-style: normal; }
+  .bande-continuer { grid-column: 1 / -1; }
+  .bande-continuer h2 { font-size: 1.1rem; margin: 0 0 10px; color: var(--text); }
+  .rangee { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; }
+  .mini { position: relative; flex: 0 0 170px; width: 170px; background: var(--card);
+          border-radius: 10px; overflow: hidden; cursor: pointer; }
+  .mini:hover { background: var(--card-hover); }
+  .mini img, .mini .mini-vide { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; background: #2b2b2b; }
+  .mini-info { padding: 8px 10px 10px; min-width: 0; }
+  .mini-titre { font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini-sous { color: var(--muted); font-size: .78rem; }
+  .mini-retirer { position: absolute; left: 8px; top: 8px; width: 28px; height: 28px; border-radius: 50%;
+                  border: none; background: #000; color: #fff; cursor: pointer; font-size: 14px; line-height: 1;
+                  opacity: .85; }
+  .mini-retirer:hover { opacity: 1; background: #222; }
+  .mini-play { position: absolute; right: 8px; top: 8px; width: 36px; height: 36px; border-radius: 50%;
+               border: none; background: rgba(229, 9, 20, .92); color: #fff; cursor: pointer; font-size: 14px; }
+  .vide-msg { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 0; }
+
+  /* Fenêtres */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.78); display: none;
+             align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .overlay.ouvert { display: flex; }
+  .modal { background: var(--card); border-radius: 14px; max-width: 980px; width: min(980px, 94vw);
+           max-height: 92vh; overflow-y: auto; overflow-x: hidden; display: grid;
+           grid-template-columns: minmax(0, 300px) minmax(0, 1fr); position: relative; }
+  .modal .gauche { position: relative; min-height: 420px; }
+  .modal .gauche img { width: 100%; height: 100%; object-fit: cover; background: #2b2b2b;
+                       border-radius: 14px 0 0 14px; display: block; }
+  .play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+          width: 84px; height: 84px; border-radius: 50%; border: none; cursor: pointer;
+          background: rgba(229, 9, 20, .92); color: #fff; font-size: 34px; padding-left: 6px;
+          box-shadow: 0 6px 24px rgba(0, 0, 0, .6); transition: transform .15s, background .15s; }
+  .play:hover { background: #ff1f2b; transform: translate(-50%, -50%) scale(1.08); }
+  .modal .contenu { padding: 26px 30px 24px; display: flex; flex-direction: column; gap: 10px;
+                    min-width: 0; overflow-wrap: anywhere; }
+  .modal h2 { font-size: 1.6rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .accroche { font-style: italic; color: #bdbdbd; }
+  .synopsis { line-height: 1.55; color: #d6d6d6; font-size: .95rem; white-space: pre-line; }
+  .detail { font-size: .9rem; color: #cfcfcf; }
+  .detail b { color: var(--text); }
+  .fiche { display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--muted); }
+  .fiche select, .ajout input, .ajout select, .recherche-serie input {
+    background: var(--search); color: var(--text); border: none; border-radius: 8px;
+    padding: 9px 12px; font-size: .9rem; outline: none; }
+  .recherche-serie { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  .recherche-serie input { flex: 1; min-width: 0; }
+  .episodes { border-top: 1px solid #2c2c2c; padding-top: 8px; max-height: 260px; overflow-y: auto; }
+  .saison-titre { color: var(--muted); font-size: .8rem; text-transform: uppercase;
+                  letter-spacing: .5px; margin: 10px 0 4px; }
+  .episode { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: .9rem;
+             border-bottom: 1px solid #262626; }
+  .episode .lib.deja-vu { color: var(--red); }
+  .episode .lib { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .episode button { background: #0b0b0b; color: var(--text); border: none; border-radius: 6px;
+                    padding: 5px 10px; font-size: .8rem; cursor: pointer; }
+  .episode button:hover { background: #000; }
+  .episode .lire { background: var(--red); }
+  .episode .lire:hover { background: #ff1f2b; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .actions button { background: #0b0b0b; color: var(--text); border: none; border-radius: 6px;
+                    padding: 9px 14px; cursor: pointer; font-size: .9rem; }
+  .actions button:hover { background: #000; }
+  .actions .principal { background: var(--red); }
+  .actions .principal:hover { background: #ff1f2b; }
+  .actions .supprimer { background: #3a1212; }
+  .avertissement { color: #ff8a8a; font-size: .85rem; line-height: 1.4; }
+  .msg { color: var(--muted); font-size: .85rem; min-height: 1.1em; }
+  .fermer { position: absolute; top: 10px; right: 14px; background: none; border: none;
+            color: var(--muted); font-size: 1.6rem; cursor: pointer; }
+  .fermer:hover { color: var(--text); }
+
+  .box { background: var(--card); border-radius: 14px; max-width: 660px; width: min(660px, 94vw);
+         max-height: 92vh; overflow-y: auto; padding: 26px 28px; position: relative; }
+  .box h2 { font-size: 1.4rem; margin-bottom: 4px; }
+  .section { margin-top: 20px; }
+  .section h3 { font-size: 1rem; margin-bottom: 8px; color: var(--text); }
+  .option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+  .option:hover { background: #262626; }
+  .option.off { opacity: .45; cursor: not-allowed; }
+  .langues { display: flex; gap: 8px; flex-wrap: wrap; }
+  .langue-btn { background: var(--search); color: var(--muted); border: none; border-radius: 999px;
+                padding: 8px 16px; cursor: pointer; font-size: .9rem; }
+  .langue-btn.actif { background: var(--red); color: #fff; }
+  .ligne-dossier { display: flex; align-items: center; gap: 10px; padding: 8px 0;
+                   border-bottom: 1px solid #2c2c2c; font-size: .9rem; }
+  .ligne-dossier .chemin { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { background: #2c2c2c; color: var(--muted); border-radius: 999px; padding: 3px 10px; font-size: .8rem; }
+  .ajout { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .ajout input { flex: 1; min-width: 200px; }
+  .bouton { background: var(--red); color: #fff; border: none; border-radius: 8px;
+            padding: 9px 14px; font-size: .9rem; cursor: pointer; font-weight: 600; }
+  .bouton:hover { background: #ff1f2b; }
+  .bouton.discret { background: #2c2c2c; }
+  .bouton.discret:hover { background: #3a3a3a; }
+  .bouton.petit { padding: 5px 10px; font-size: .8rem; }
+  .lien-discret { color: var(--muted); font-size: .85rem; }
+
+  @media (max-width: 640px) {
+    .modal { grid-template-columns: 1fr; }
+    .modal .gauche img { border-radius: 14px 14px 0 0; aspect-ratio: 2 / 3; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="version">V1.11.26<span>By FabR1</span></div>
+<button class="gear" id="btn-reglages" title="Paramètres" aria-label="Paramètres">⚙</button>
+
+<header>
+  <h1>🎬 <span data-i18n="titre">Ma Vidéothèque</span><img class="logo" alt="FabR1" src="data:image/png;base64,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"></h1>
+  <nav class="tabs" id="onglets"></nav>
+  <nav class="genres" id="genres"></nav>
+  <div class="barre">
+    <input id="recherche" class="search" type="search" data-i18n-ph="recherche_ph">
+  </div>
+  <div class="compte" id="compte"></div>
+</header>
+
+<main id="grille" class="grille"></main>
+
+<!-- Fiche film / série -->
+<div id="overlay" class="overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="fermer" id="fermer" aria-label="Fermer">×</button>
+    <div class="gauche">
+      <img id="m-affiche" alt="">
+      <button class="play" id="m-play" title="" aria-label="">▶</button>
+    </div>
+    <div class="contenu">
+      <h2 id="m-titre"></h2>
+      <div class="meta" id="m-meta"></div>
+      <div class="fiche"><span data-i18n="categorie">Catégorie :</span>
+        <select id="m-categorie"></select>
+      </div>
+      <div class="accroche" id="m-accroche"></div>
+      <div class="synopsis" id="m-synopsis"></div>
+      <div class="detail" id="m-detail"></div>
+      <div class="recherche-serie" id="m-recherche-zone" style="display:none">
+        <input id="m-recherche-serie" type="text" data-i18n-ph="titre_recherche_ph">
+        <button class="bouton" id="m-recherche-btn" data-i18n="rechercher_titre">🔍 Rechercher ce titre</button>
+      </div>
+      <div class="episodes" id="m-episodes" style="display:none"></div>
+      <div class="actions">
+        <button class="principal" id="m-lancer" data-i18n="lancer">▶ Lancer la lecture</button>
+        <button id="m-suivant" data-i18n="suivant">⏭ Épisode suivant</button>
+        <button id="m-bande" data-i18n="bande">🎬 Bande-annonce</button>
+        <button id="m-vu" data-i18n="marquer_vu">✓ Marquer vu</button>
+        <button id="m-infos" data-i18n="completer">🔍 Compléter les infos</button>
+        <button class="supprimer" id="m-supprimer" data-i18n="supprimer_btn">🗑 Supprimer le fichier</button>
+      </div>
+      <div class="avertissement" data-i18n="avertissement"></div>
+      <div class="msg" id="m-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Paramètres -->
+<div id="overlay-reglages" class="overlay">
+  <div class="box" role="dialog" aria-modal="true">
+    <button class="fermer" id="fermer-reglages" aria-label="Fermer">×</button>
+    <h2 data-i18n="reg_titre">Paramètres</h2>
+
+    <div class="section">
+      <h3 data-i18n="reg_lecteur">Lecteur vidéo</h3>
+      <div id="liste-lecteurs"></div>
+      <div class="msg" id="lecteur-actuel"></div>
+      <div class="msg" id="base-info"></div>
+      <div class="ajout">
+        <input id="vlc-chemin" type="text" data-i18n-ph="vlc_chemin_ph">
+        <button class="bouton discret" id="btn-vlc-chemin" data-i18n="enregistrer">Enregistrer</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 data-i18n="reg_langue">Langue</h3>
+      <div class="langues" id="liste-langues"></div>
+    </div>
+
+    <div class="section">
+      <h3 data-i18n="reg_tmdb">Clé TMDB</h3>
+      <div class="msg" id="tmdb-statut"></div>
+      <div class="msg"><span data-i18n="tmdb_aide">Clé gratuite, à demander sur TMDB :</span>
+        <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener"
+           style="color:var(--blue);font-weight:600;text-decoration:underline" data-i18n="tmdb_lien">Créer ma clé TMDB</a></div>
+      <div class="ajout">
+        <input id="tmdb-cle" type="password" data-i18n-ph="tmdb_ph">
+        <button class="bouton discret" id="btn-tmdb-cle" data-i18n="enregistrer">Enregistrer</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 data-i18n="reg_dossiers">Mes dossiers de vidéos</h3>
+      <div id="liste-dossiers"></div>
+      <div class="ajout">
+        <input id="nouveau-chemin" type="text" data-i18n-ph="dossier_ph">
+        <select id="nouvelle-categorie"></select>
+        <button class="bouton discret" id="btn-ajouter-dossier" data-i18n="ajouter">Ajouter</button>
+      </div>
+      <div class="ajout">
+        <button class="bouton" id="btn-scan-tous" data-i18n="scan_tous">🔄 Scanner tous les dossiers</button>
+        <button class="bouton discret" id="btn-manquants" data-i18n="manquants">🖼 Compléter jaquettes et résumés manquants</button>
+      </div>
+      <div class="msg" id="msg-dossiers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Premier lancement -->
+<div id="overlay-premier" class="overlay">
+  <div class="box" role="dialog" aria-modal="true">
+    <h2 data-i18n="pl_titre">Bienvenue dans Ma Vidéothèque</h2>
+    <div class="section">
+      <h3 data-i18n="pl_langue">Choisis ta langue</h3>
+      <div class="langues" id="pl-langues"></div>
+    </div>
+    <div class="section">
+      <h3 data-i18n="pl_lecteur">Quel lecteur vidéo veux-tu utiliser ?</h3>
+      <div id="pl-lecteurs"></div>
+    </div>
+    <div class="ajout" style="justify-content:space-between;align-items:center">
+      <span class="lien-discret" data-i18n="pl_modifiable">Tu pourras changer ces choix à tout moment avec le bouton ⚙.</span>
+      <button class="bouton" id="pl-continuer" data-i18n="pl_continuer">Commencer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- TRADUCTIONS ----------
+  const T = {
+    fr: {
+      titre: "Ma Vidéothèque", recherche_ph: "Rechercher par titre, acteur, genre…",
+      cat_films: "Films", cat_series: "Séries", cat_enfants: "Enfants", cat_spectacles: "Spectacles",
+      tous: "Tous", compte: "{n} affiché(s) sur {total} · {vus} vu(s) au total",
+      vide_cat: "Aucun élément dans « {cat} ». Ouvre les paramètres (⚙) pour ajouter un dossier.",
+      vide_recherche: "Aucun résultat pour cette recherche.",
+      vide_appli: "Aucun film pour l'instant. Ouvre les paramètres (⚙) pour ajouter ton dossier de films.",
+      pas_affiche: "Pas d'affiche", epis: "{n} épisode(s)", vu: "✓ Vu", infos: "Infos",
+      lancer_film: "Lancer le film", voir_episodes: "Voir les épisodes",
+      lecture_lancee: "Lecture lancée : {titre}",
+      categorie: "Catégorie :", type: "Type", annee: "Année", min: "{n} min",
+      realisateur: "Réalisateur", acteurs: "Acteurs", pays: "Pays", note: "Note",
+      sources: "Sources", fichier: "Fichier", pas_synopsis: "Pas de synopsis.",
+      titre_recherche_ph: "Titre exact de la série sur TMDB", rechercher_titre: "🔍 Rechercher ce titre",
+      saison: "Saison {n}", lire: "▶ Lire", marquer_vu: "✓ Marquer vu", marquer_non_vu: "✕ Marquer non vu",
+      lancer: "▶ Lancer la lecture", bande: "🎬 Bande-annonce", completer: "🔍 Compléter les infos",
+      supprimer_btn: "🗑 Supprimer le fichier",
+      avertissement: "⚠ « Supprimer » efface la fiche, la jaquette ET le fichier vidéo sur le disque. Action définitive.",
+      confirm_supp: "ATTENTION : suppression définitive.\n\nSont effacés du disque : {quoi} et sa jaquette.\nCette action est irréversible.\n\nContinuer ?",
+      quoi_serie: "la série « {titre} » ({n} fichier(s) vidéo)", quoi_film: "« {titre} »",
+      msg_titre: "Indique un titre.", msg_recherche: "Recherche de « {titre} » en cours…",
+      msg_infos_maj: "Infos mises à jour ({source}).", msg_bande: "Pas de bande-annonce connue. Essaie « Compléter les infos ».",
+      msg_recherche_infos: "Recherche en cours…", msg_cat: "Catégorie mise à jour.",
+      msg_lecture: "Lecture lancée dans le lecteur choisi.",
+      reg_titre: "Paramètres", reg_lecteur: "Lecteur vidéo", reg_langue: "Langue", reg_dossiers: "Mes dossiers de vidéos",
+      lect_vlc_pc: "VLC installé sur le PC", lect_vlc_portable: "VLC portable (dossier VLC à côté de l'appli)",
+      lect_defaut: "Lecteur par défaut de Windows", non_trouve: "(non trouvé)",
+      lect_actuel: "Lecteur actuellement utilisé : {nom}",
+      dossier_ph: "Chemin du dossier, ex : D:\\Films", ajouter: "Ajouter", scanner: "Scanner",
+      scan_tous: "🔄 Scanner tous les dossiers", manquants: "🖼 Compléter jaquettes et résumés manquants",
+      aucun_dossier: "Aucun dossier pour l'instant.",
+      supprimer_dossier: "Retirer ce dossier de la liste ?\n(les fichiers ne seront pas effacés)",
+      scan_en_cours: "Scan en cours, les infos sont récupérées… (peut prendre un moment)",
+      scan_ok: "{n} nouveau(x) élément(s) ajouté(s).",
+      scan_tous_en_cours: "Scan de tous les dossiers en cours… (peut prendre un moment)",
+      manq_en_cours: "Recherche des infos manquantes… (peut prendre plusieurs minutes)",
+      manq_ok: "{n} fiche(s) complétée(s), {e} sans résultat.",
+      dossier_ajoute: "Dossier ajouté. Clique sur « Scanner » pour le remplir.",
+      indique_chemin: "Indique un chemin.",
+      reg_tmdb: "Clé TMDB", tmdb_ph: "Colle ta clé API TMDB ici", tmdb_aide: "Clé gratuite, à demander sur TMDB :",
+      tmdb_present: "✓ Clé TMDB enregistrée.", tmdb_absente: "⚠ Aucune clé TMDB : les jaquettes et résumés ne seront pas récupérés.",
+      tmdb_enregistree: "Clé TMDB enregistrée.", tmdb_lien: "Créer ma clé TMDB",
+      vlc_chemin_ph: "Chemin de vlc.exe (si VLC n'est pas détecté)", enregistrer: "Enregistrer",
+      vlc_chemin_ok: "Chemin de VLC enregistré.",
+      suivant: "⏭ Épisode suivant", continuer_titre: "Continuer à regarder", reprendre: "Reprendre",
+      retirer_continuer: "Retirer de la liste (le fichier est conservé)",
+      prochain: "Prochain : {e}", aucun_suivant: "Plus d'épisode à lire.",
+      base_label: "Base de données : {chemin}",
+      serveur_ancien: "⚠ Le serveur répond avec une ancienne version. Ferme la fenêtre Python et relance videotheque_app_v11.py.",
+      pl_titre: "Bienvenue dans Ma Vidéothèque", pl_langue: "Choisis ta langue",
+      pl_lecteur: "Quel lecteur vidéo veux-tu utiliser ?", pl_continuer: "Commencer",
+      pl_modifiable: "Tu pourras changer ces choix à tout moment avec le bouton ⚙.",
+    },
+    en: {
+      titre: "My Video Library", recherche_ph: "Search by title, actor, genre…",
+      cat_films: "Movies", cat_series: "Series", cat_enfants: "Kids", cat_spectacles: "Shows",
+      tous: "All", compte: "{n} shown out of {total} · {vus} watched in total",
+      vide_cat: "Nothing in « {cat} ». Open settings (⚙) to add a folder.",
+      vide_recherche: "No results for this search.",
+      vide_appli: "No movies yet. Open settings (⚙) to add your movie folder.",
+      pas_affiche: "No poster", epis: "{n} episode(s)", vu: "✓ Watched", infos: "Info",
+      lancer_film: "Play the movie", voir_episodes: "See the episodes",
+      lecture_lancee: "Playing: {titre}",
+      categorie: "Category:", type: "Type", annee: "Year", min: "{n} min",
+      realisateur: "Director", acteurs: "Cast", pays: "Country", note: "Rating",
+      sources: "Sources", fichier: "File", pas_synopsis: "No synopsis.",
+      titre_recherche_ph: "Exact series title on TMDB", rechercher_titre: "🔍 Search this title",
+      saison: "Season {n}", lire: "▶ Play", marquer_vu: "✓ Mark as watched", marquer_non_vu: "✕ Mark as unwatched",
+      lancer: "▶ Play", bande: "🎬 Trailer", completer: "🔍 Fetch info",
+      supprimer_btn: "🗑 Delete file",
+      avertissement: "⚠ « Delete » removes the entry, the poster AND the video file from the disk. This cannot be undone.",
+      confirm_supp: "WARNING: permanent deletion.\n\nRemoved from the disk: {quoi} and its poster.\nThis cannot be undone.\n\nContinue?",
+      quoi_serie: "the series « {titre} » ({n} video file(s))", quoi_film: "« {titre} »",
+      msg_titre: "Enter a title.", msg_recherche: "Searching for « {titre} »…",
+      msg_infos_maj: "Info updated ({source}).", msg_bande: "No trailer found. Try « Fetch info ».",
+      msg_recherche_infos: "Searching…", msg_cat: "Category updated.",
+      msg_lecture: "Playing in the chosen player.",
+      reg_titre: "Settings", reg_lecteur: "Video player", reg_langue: "Language", reg_dossiers: "My video folders",
+      lect_vlc_pc: "VLC installed on this PC", lect_vlc_portable: "Portable VLC (VLC folder next to the app)",
+      lect_defaut: "Windows default video player", non_trouve: "(not found)",
+      lect_actuel: "Player currently used: {nom}",
+      dossier_ph: "Folder path, e.g. D:\\Movies", ajouter: "Add", scanner: "Scan",
+      scan_tous: "🔄 Scan all folders", manquants: "🖼 Fetch missing posters and summaries",
+      aucun_dossier: "No folder yet.",
+      supprimer_dossier: "Remove this folder from the list?\n(the files will not be deleted)",
+      scan_en_cours: "Scanning, fetching info… (this may take a while)",
+      scan_ok: "{n} new item(s) added.",
+      scan_tous_en_cours: "Scanning all folders… (this may take a while)",
+      manq_en_cours: "Fetching missing info… (this may take several minutes)",
+      manq_ok: "{n} entry(ies) completed, {e} without result.",
+      dossier_ajoute: "Folder added. Click « Scan » to fill it.",
+      indique_chemin: "Enter a path.",
+      reg_tmdb: "TMDB key", tmdb_ph: "Paste your TMDB API key here", tmdb_aide: "Free key, request it on TMDB:",
+      tmdb_present: "✓ TMDB key saved.", tmdb_absente: "⚠ No TMDB key: posters and summaries will not be fetched.",
+      tmdb_enregistree: "TMDB key saved.", tmdb_lien: "Create my TMDB key",
+      vlc_chemin_ph: "Path to vlc.exe (if VLC is not detected)", enregistrer: "Save",
+      vlc_chemin_ok: "VLC path saved.",
+      suivant: "⏭ Next episode", continuer_titre: "Continue watching", reprendre: "Resume",
+      retirer_continuer: "Remove from the list (the file is kept)",
+      prochain: "Next: {e}", aucun_suivant: "No more episodes to play.",
+      base_label: "Database: {chemin}",
+      serveur_ancien: "⚠ The server is running an old version. Close the Python window and restart videotheque_app_v11.py.",
+      pl_titre: "Welcome to My Video Library", pl_langue: "Choose your language",
+      pl_lecteur: "Which video player do you want to use?", pl_continuer: "Start",
+      pl_modifiable: "You can change these choices at any time with the ⚙ button.",
+    },
+    nl: {
+      titre: "Mijn Videotheek", recherche_ph: "Zoeken op titel, acteur, genre…",
+      cat_films: "Films", cat_series: "Series", cat_enfants: "Kinderen", cat_spectacles: "Shows",
+      tous: "Alles", compte: "{n} getoond van {total} · {vus} gezien in totaal",
+      vide_cat: "Niets in « {cat} ». Open instellingen (⚙) om een map toe te voegen.",
+      vide_recherche: "Geen resultaten voor deze zoekopdracht.",
+      vide_appli: "Nog geen films. Open instellingen (⚙) om je filmmap toe te voegen.",
+      pas_affiche: "Geen poster", epis: "{n} aflevering(en)", vu: "✓ Gezien", infos: "Info",
+      lancer_film: "Film afspelen", voir_episodes: "Bekijk de afleveringen",
+      lecture_lancee: "Afspelen: {titre}",
+      categorie: "Categorie:", type: "Type", annee: "Jaar", min: "{n} min",
+      realisateur: "Regisseur", acteurs: "Acteurs", pays: "Land", note: "Waardering",
+      sources: "Bronnen", fichier: "Bestand", pas_synopsis: "Geen samenvatting.",
+      titre_recherche_ph: "Exacte titel van de serie op TMDB", rechercher_titre: "🔍 Zoek deze titel",
+      saison: "Seizoen {n}", lire: "▶ Afspelen", marquer_vu: "✓ Markeer als gezien", marquer_non_vu: "✕ Markeer als niet gezien",
+      lancer: "▶ Afspelen", bande: "🎬 Trailer", completer: "🔍 Info ophalen",
+      supprimer_btn: "🗑 Bestand verwijderen",
+      avertissement: "⚠ « Verwijderen » wist de fiche, de poster EN het videobestand van de schijf. Dit is definitief.",
+      confirm_supp: "LET OP: definitief verwijderen.\n\nVan de schijf worden gewist: {quoi} en de poster.\nDit kan niet ongedaan worden.\n\nDoorgaan?",
+      quoi_serie: "de serie « {titre} » ({n} videobestand(en))", quoi_film: "« {titre} »",
+      msg_titre: "Vul een titel in.", msg_recherche: "Zoeken naar « {titre} »…",
+      msg_infos_maj: "Info bijgewerkt ({source}).", msg_bande: "Geen trailer gevonden. Probeer « Info ophalen ».",
+      msg_recherche_infos: "Zoeken…", msg_cat: "Categorie bijgewerkt.",
+      msg_lecture: "Afspelen in de gekozen speler.",
+      reg_titre: "Instellingen", reg_lecteur: "Videospeler", reg_langue: "Taal", reg_dossiers: "Mijn videomappen",
+      lect_vlc_pc: "VLC geïnstalleerd op deze pc", lect_vlc_portable: "Draagbare VLC (map VLC naast de app)",
+      lect_defaut: "Standaard videospeler van Windows", non_trouve: "(niet gevonden)",
+      lect_actuel: "Speler in gebruik: {nom}",
+      dossier_ph: "Pad van de map, bv. D:\\Films", ajouter: "Toevoegen", scanner: "Scannen",
+      scan_tous: "🔄 Alle mappen scannen", manquants: "🖼 Ontbrekende posters en samenvattingen ophalen",
+      aucun_dossier: "Nog geen map.",
+      supprimer_dossier: "Deze map uit de lijst verwijderen?\n(de bestanden worden niet gewist)",
+      scan_en_cours: "Scannen, info ophalen… (dit kan even duren)",
+      scan_ok: "{n} nieuw(e) item(s) toegevoegd.",
+      scan_tous_en_cours: "Alle mappen worden gescand… (dit kan even duren)",
+      manq_en_cours: "Ontbrekende info ophalen… (dit kan enkele minuten duren)",
+      manq_ok: "{n} fiche(s) aangevuld, {e} zonder resultaat.",
+      dossier_ajoute: "Map toegevoegd. Klik op « Scannen » om hem te vullen.",
+      indique_chemin: "Vul een pad in.",
+      reg_tmdb: "TMDB-sleutel", tmdb_ph: "Plak hier je TMDB API-sleutel", tmdb_aide: "Gratis sleutel, aanvragen bij TMDB:",
+      tmdb_present: "✓ TMDB-sleutel opgeslagen.", tmdb_absente: "⚠ Geen TMDB-sleutel: posters en samenvattingen worden niet opgehaald.",
+      tmdb_enregistree: "TMDB-sleutel opgeslagen.", tmdb_lien: "Mijn TMDB-sleutel aanmaken",
+      vlc_chemin_ph: "Pad naar vlc.exe (als VLC niet wordt gevonden)", enregistrer: "Opslaan",
+      vlc_chemin_ok: "VLC-pad opgeslagen.",
+      suivant: "⏭ Volgende aflevering", continuer_titre: "Verder kijken", reprendre: "Hervatten",
+      retirer_continuer: "Uit de lijst verwijderen (het bestand blijft bewaard)",
+      prochain: "Volgende: {e}", aucun_suivant: "Geen afleveringen meer om af te spelen.",
+      base_label: "Database: {chemin}",
+      serveur_ancien: "⚠ De server draait een oude versie. Sluit het Python-venster en start videotheque_app_v11.py opnieuw.",
+      pl_titre: "Welkom bij Mijn Videotheek", pl_langue: "Kies je taal",
+      pl_lecteur: "Welke videospeler wil je gebruiken?", pl_continuer: "Beginnen",
+      pl_modifiable: "Je kunt deze keuzes altijd wijzigen met de knop ⚙.",
+    },
+  };
+
+  // ---------- ÉTAT ----------
+  let lang = "fr";
+  let reglages = {};
+  let films = [];
+  let dossiers = [];
+  let categorieActive = "Films";
+  let genreActif = "Tous";
+  let ficheCourante = null;
+  let continuer = [];
+  const CATEGORIES = ["Films", "Séries", "Enfants", "Spectacles"];
+  const CLE_CATEGORIE = { "Films": "cat_films", "Séries": "cat_series", "Enfants": "cat_enfants", "Spectacles": "cat_spectacles" };
+  const CORRESPONDANCES = {
+    "Action & Aventure": ["Action", "Aventure"],
+    "Action & Adventure": ["Action", "Aventure"],
+    "Science-Fiction & Fantastique": ["Science-Fiction", "Fantastique"],
+    "Crime": ["Policier"],
+    "Guerre & Politique": ["Guerre", "Politique"],
+    "Familial": ["Famille"],
+  };
+  const LANGUES = [["fr", "Français"], ["en", "English"], ["nl", "Nederlands"]];
+
+  const $ = id => document.getElementById(id);
+  const grille = $("grille"), recherche = $("recherche"), compte = $("compte");
+
+  function t(cle, vars = {}) {
+    let s = (T[lang] && T[lang][cle]) || T.fr[cle] || cle;
+    for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+    return s;
+  }
+
+  function nomCategorie(c) { return t(CLE_CATEGORIE[c]); }
+
+  function appliquerTraductions() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+    document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+    document.title = t("titre");
+    $("btn-reglages").title = t("reg_titre");
+    $("m-play").title = t("lancer_film");
+    $("m-play").setAttribute("aria-label", t("lancer_film"));
+  }
+
+  async function api(chemin, corps) {
+    const options = corps === undefined
+      ? {}
+      : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) };
+    const r = await fetch(chemin, options);
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.erreur || "Erreur serveur");
+    return data;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function genresDe(f) {
+    const sortie = new Set();
+    (f.genre || "").split(/,\s*/).filter(Boolean).forEach(g =>
+      (CORRESPONDANCES[g] || [g]).forEach(x => sortie.add(x)));
+    return [...sortie];
+  }
+
+  // ---------- ONGLETS ET GENRES ----------
+  function construireOnglets() {
+    const nav = $("onglets");
+    nav.innerHTML = "";
+    CATEGORIES.forEach(c => {
+      const b = document.createElement("button");
+      b.className = "tab" + (c === categorieActive ? " actif" : "");
+      b.textContent = nomCategorie(c);
+      b.addEventListener("click", () => {
+        categorieActive = c;
+        genreActif = "Tous";
+        construireOnglets();
+        construireGenres();
+        afficherGrille();
+      });
+      nav.appendChild(b);
+    });
+  }
+
+  function construireGenres() {
+    const nav = $("genres");
+    nav.innerHTML = "";
+    const dans = films.filter(f => f.categorie === categorieActive);
+    const compteur = new Map();
+    dans.forEach(f => genresDe(f).forEach(g => compteur.set(g, (compteur.get(g) || 0) + 1)));
+    const liste = [[t("tous"), dans.length, "Tous"], ...[...compteur.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], lang))
+      .map(([g, n]) => [g, n, g])];
+    liste.forEach(([nom, n, valeur]) => {
+      const b = document.createElement("button");
+      b.className = "chip" + (valeur === genreActif ? " actif" : "");
+      b.textContent = `${nom} (${n})`;
+      b.addEventListener("click", () => { genreActif = valeur; construireGenres(); afficherGrille(); });
+      nav.appendChild(b);
+    });
+  }
+
+  // ---------- GRILLE ----------
+  async function chargerFilms() {
+    films = await api("/api/films");
+    continuer = await api("/api/continuer").catch(() => []);
+    construireGenres();
+    afficherGrille();
+  }
+
+  function filtrer() {
+    const q = recherche.value.trim().toLowerCase();
+    return films.filter(f => f.categorie === categorieActive &&
+      (genreActif === "Tous" || genresDe(f).includes(genreActif)) &&
+      [f.titre, f.genre, f.acteurs, f.realisateur].some(c => (c || "").toLowerCase().includes(q)));
+  }
+
+  function afficherGrille() {
+    const liste = filtrer();
+    grille.innerHTML = "";
+    ajouterContinuer();
+    const dans = films.filter(f => f.categorie === categorieActive).length;
+    compte.textContent = t("compte", { n: liste.length, total: dans, vus: films.filter(f => f.vu).length });
+    if (liste.length === 0) {
+      const v = document.createElement("div");
+      v.className = "vide-msg";
+      v.textContent = dans ? t("vide_recherche")
+        : (films.length ? t("vide_cat", { cat: nomCategorie(categorieActive) }) : t("vide_appli"));
+      grille.appendChild(v);
+      return;
+    }
+    liste.forEach(f => {
+      const carte = document.createElement("article");
+      carte.className = "carte";
+      const visuel = f.jaquette_url
+        ? Object.assign(document.createElement("img"), { className: "affiche", src: f.jaquette_url, alt: "" })
+        : Object.assign(document.createElement("div"), { className: "affiche vide", textContent: t("pas_affiche") });
+
+      const cadre = document.createElement("div");
+      cadre.className = "poster";
+      const play = document.createElement("button");
+      play.className = "play-card";
+      play.textContent = "▶";
+      play.title = f.est_serie ? t("voir_episodes") : t("lancer_film");
+      play.addEventListener("click", async e => {
+        e.stopPropagation();
+        if (f.est_serie) { ouvrirInfos(f.id); return; }
+        try {
+          await api("/api/lancer", { id: f.id });
+          compte.textContent = t("lecture_lancee", { titre: f.titre });
+          await chargerFilms();
+        } catch (err) { compte.textContent = err.message; }
+      });
+      cadre.append(visuel, play);
+
+      const pied = document.createElement("div");
+      pied.className = "pied";
+      const titre = Object.assign(document.createElement("div"), {
+        className: "titre" + (f.vu ? " deja-vu" : ""), textContent: f.titre });
+      const sous = Object.assign(document.createElement("div"), {
+        className: "sous",
+        textContent: [f.annee, f.est_serie ? t("epis", { n: f.nb_episodes }) : "", f.genre]
+          .filter(Boolean).join(" · ") });
+      const bas = document.createElement("div");
+      bas.className = "bas";
+      if (f.vu) bas.appendChild(Object.assign(document.createElement("span"), { className: "vu", textContent: t("vu") }));
+      const btn = document.createElement("button");
+      btn.className = "btn-infos";
+      btn.innerHTML = `<i class="icone">i</i> ${escapeHtml(t("infos"))}`;
+      btn.addEventListener("click", () => ouvrirInfos(f.id));
+      bas.appendChild(btn);
+
+      pied.append(titre, sous, bas);
+      carte.append(cadre, pied);
+      grille.appendChild(carte);
+    });
+  }
+
+  function ajouterContinuer() {
+    const elements = continuer.filter(e => e.categorie === categorieActive);
+    if (!elements.length || genreActif !== "Tous" || recherche.value.trim()) return;
+    const bande = document.createElement("section");
+    bande.className = "bande-continuer";
+    const titre = document.createElement("h2");
+    titre.textContent = t("continuer_titre");
+    const rangee = document.createElement("div");
+    rangee.className = "rangee";
+    elements.forEach(e => {
+      const mini = document.createElement("div");
+      mini.className = "mini";
+      const visuel = e.jaquette_url
+        ? Object.assign(document.createElement("img"), { src: e.jaquette_url, alt: "" })
+        : Object.assign(document.createElement("div"), { className: "mini-vide" });
+      const info = document.createElement("div");
+      info.className = "mini-info";
+      const nom = Object.assign(document.createElement("div"), { className: "mini-titre", textContent: e.titre });
+      const sous = Object.assign(document.createElement("div"), {
+        className: "mini-sous",
+        textContent: e.est_serie
+          ? t("prochain", { e: `S${e.saison} E${String(e.episode).padStart(2, "0")}` })
+          : t("reprendre") });
+      const play = Object.assign(document.createElement("button"), { className: "mini-play", textContent: "▶" });
+      play.addEventListener("click", async ev => {
+        ev.stopPropagation();
+        try { await api("/api/lancer", { id: e.lecture_id }); await chargerFilms(); }
+        catch (err) { compte.textContent = err.message; }
+      });
+      const retirer = Object.assign(document.createElement("button"), {
+        className: "mini-retirer", textContent: "✕", title: t("retirer_continuer") });
+      retirer.addEventListener("click", async ev => {
+        ev.stopPropagation();
+        try {
+          await api("/api/continuer-retirer", { id: e.id, tout: !!e.est_serie });
+          await chargerFilms();
+        } catch (err) { compte.textContent = err.message; }
+      });
+      mini.addEventListener("click", () => ouvrirInfos(e.id));
+      info.append(nom, sous);
+      mini.append(visuel, info, play, retirer);
+      rangee.appendChild(mini);
+    });
+    bande.append(titre, rangee);
+    grille.appendChild(bande);
+  }
+
+  function prochainEpisode(f) {
+    const eps = f.episodes || [];
+    const joues = eps.filter(e => e.derniere);
+    if (joues.length) {
+      const dernier = joues.reduce((a, b) => (a.derniere > b.derniere ? a : b));
+      const suivant = eps.find(e => (e.saison > dernier.saison ||
+        (e.saison === dernier.saison && e.episode > dernier.episode)) && !e.vu);
+      if (suivant) return suivant;
+    }
+    return eps.find(e => !e.vu) || null;
+  }
+
+  // ---------- FICHE ----------
+  function ouvrirInfos(id) {
+    ficheCourante = films.find(f => f.id === id);
+    if (!ficheCourante) return;
+    const f = ficheCourante;
+    const img = $("m-affiche");
+    if (f.jaquette_url) { img.src = f.jaquette_url; img.style.display = ""; }
+    else { img.removeAttribute("src"); img.style.display = "none"; }
+
+    $("m-titre").textContent = f.titre;
+    $("m-meta").textContent = [f.annee, nomCategorie(f.categorie), f.genre, f.duree ? t("min", { n: f.duree }) : ""]
+      .filter(Boolean).join(" · ");
+    $("m-accroche").textContent = f.tagline || "";
+    $("m-synopsis").textContent = f.synopsis || t("pas_synopsis");
+    $("m-detail").innerHTML = [
+      f.realisateur && `<b>${t("realisateur")} :</b> ${escapeHtml(f.realisateur)}`,
+      f.acteurs && `<b>${t("acteurs")} :</b> ${escapeHtml(f.acteurs)}`,
+      f.pays && `<b>${t("pays")} :</b> ${escapeHtml(f.pays)}`,
+      f.note && `<b>${t("note")} :</b> ${escapeHtml(f.note)}`,
+      f.source && `<b>${t("sources")} :</b> ${escapeHtml(f.source)}`,
+      f.fichier && `<b>${t("fichier")} :</b> ${escapeHtml(f.fichier)}`,
+    ].filter(Boolean).join("<br>");
+
+    const select = $("m-categorie");
+    select.innerHTML = "";
+    CATEGORIES.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c; o.textContent = nomCategorie(c); o.selected = c === f.categorie;
+      select.appendChild(o);
+    });
+    select.onchange = async () => {
+      try {
+        await api("/api/update", { id: f.id, categorie: select.value, tout: !!f.est_serie });
+        await chargerFilms();
+        message(t("msg_cat"));
+      } catch (e) { message(e.message); }
+    };
+
+    const serie = !!f.est_serie;
+    $("m-play").style.display = serie ? "none" : "";
+    $("m-lancer").style.display = serie ? "none" : "";
+    $("m-suivant").style.display = serie ? "" : "none";
+    $("m-vu").style.display = serie ? "none" : "";
+    $("m-vu").textContent = f.vu ? t("marquer_non_vu") : t("marquer_vu");
+    $("m-recherche-zone").style.display = serie ? "" : "none";
+    $("m-recherche-serie").value = f.titre_recherche || f.serie_nom || f.titre;
+    afficherEpisodes(f);
+    message("");
+    $("overlay").classList.add("ouvert");
+  }
+
+  function afficherEpisodes(f) {
+    const zone = $("m-episodes");
+    zone.innerHTML = "";
+    if (!f.est_serie) { zone.style.display = "none"; return; }
+    zone.style.display = "";
+    let saisonCourante = null;
+    f.episodes.forEach(ep => {
+      if (ep.saison !== saisonCourante) {
+        saisonCourante = ep.saison;
+        const titre = document.createElement("div");
+        titre.className = "saison-titre";
+        titre.textContent = t("saison", { n: ep.saison });
+        zone.appendChild(titre);
+      }
+      const ligne = document.createElement("div");
+      ligne.className = "episode";
+      const nomFichier = ep.fichier.split(/[\\/]/).pop();
+      const lib = Object.assign(document.createElement("span"), {
+        className: "lib" + (ep.vu ? " deja-vu" : ""),
+        textContent: `E${String(ep.episode).padStart(2, "0")}  ·  ${nomFichier}`,
+        title: ep.fichier });
+      const lire = Object.assign(document.createElement("button"), { className: "lire", textContent: t("lire") });
+      lire.addEventListener("click", async () => {
+        try { await api("/api/lancer", { id: ep.id }); message(t("msg_lecture")); }
+        catch (e) { message(e.message); }
+      });
+      const vu = Object.assign(document.createElement("button"), {
+        textContent: ep.vu ? t("marquer_non_vu") : t("marquer_vu") });
+      vu.addEventListener("click", async () => {
+        try {
+          await api("/api/update", { id: ep.id, vu: !ep.vu });
+          await chargerFilms();
+          ouvrirInfos(f.id);
+        } catch (e) { message(e.message); }
+      });
+      ligne.append(lib, lire, vu);
+      zone.appendChild(ligne);
+    });
+  }
+
+  function fermerInfos() { $("overlay").classList.remove("ouvert"); }
+  function message(texte) { $("m-msg").textContent = texte; }
+
+  $("fermer").addEventListener("click", fermerInfos);
+  $("overlay").addEventListener("click", e => { if (e.target === $("overlay")) fermerInfos(); });
+
+  $("m-lancer").addEventListener("click", async () => {
+    try { await api("/api/lancer", { id: ficheCourante.id }); message(t("msg_lecture")); }
+    catch (e) { message(e.message); }
+  });
+  $("m-play").addEventListener("click", async () => {
+    try { await api("/api/lancer", { id: ficheCourante.id }); message(t("msg_lecture")); }
+    catch (e) { message(e.message); }
+  });
+  $("m-suivant").addEventListener("click", async () => {
+    const ep = prochainEpisode(ficheCourante);
+    if (!ep) { message(t("aucun_suivant")); return; }
+    try {
+      await api("/api/lancer", { id: ep.id });
+      message(t("msg_lecture"));
+      await chargerFilms();
+      ouvrirInfos(ficheCourante.id);
+    } catch (e) { message(e.message); }
+  });
+
+  $("m-bande").addEventListener("click", () => {
+    if (ficheCourante.bande_annonce) window.open(ficheCourante.bande_annonce, "_blank");
+    else message(t("msg_bande"));
+  });
+  $("m-vu").addEventListener("click", async () => {
+    try {
+      await api("/api/update", { id: ficheCourante.id, vu: !ficheCourante.vu });
+      await chargerFilms();
+      ouvrirInfos(ficheCourante.id);
+    } catch (e) { message(e.message); }
+  });
+  $("m-infos").addEventListener("click", async () => {
+    message(t("msg_recherche_infos"));
+    try {
+      const r = await api("/api/infos", { id: ficheCourante.id });
+      await chargerFilms();
+      ouvrirInfos(ficheCourante.id);
+      message(t("msg_infos_maj", { source: r.source }));
+    } catch (e) { message(e.message); }
+  });
+  $("m-recherche-btn").addEventListener("click", async () => {
+    const titre = $("m-recherche-serie").value.trim();
+    if (!titre) { message(t("msg_titre")); return; }
+    message(t("msg_recherche", { titre }));
+    try {
+      const r = await api("/api/serie-recherche", { id: ficheCourante.id, titre });
+      await chargerFilms();
+      ouvrirInfos(ficheCourante.id);
+      message(t("msg_infos_maj", { source: r.source }));
+    } catch (e) { message(e.message); }
+  });
+  $("m-supprimer").addEventListener("click", async () => {
+    const serie = !!ficheCourante.est_serie;
+    const quoi = serie
+      ? t("quoi_serie", { titre: ficheCourante.titre, n: ficheCourante.nb_episodes })
+      : t("quoi_film", { titre: ficheCourante.titre });
+    if (!confirm(t("confirm_supp", { quoi }))) return;
+    try {
+      await api("/api/supprimer", { id: ficheCourante.id, tout: serie, fichier: true });
+      fermerInfos();
+      await chargerFilms();
+    } catch (e) { message(e.message); }
+  });
+
+  // ---------- PARAMÈTRES ----------
+  function nomsLecteurs() {
+    return { vlc_pc: t("lect_vlc_pc"), vlc_portable: t("lect_vlc_portable"), defaut: t("lect_defaut") };
+  }
+
+  function afficherReglages() {
+    const liste = $("liste-lecteurs");
+    liste.innerHTML = "";
+    const noms = nomsLecteurs();
+    ["vlc_pc", "vlc_portable", "defaut"].forEach(cle => {
+      const disponible = !!(reglages.lecteurs && reglages.lecteurs[cle]);
+      const label = document.createElement("label");
+      label.className = "option" + (disponible ? "" : " off");
+      const radio = Object.assign(document.createElement("input"), {
+        type: "radio", name: "lecteur", value: cle, checked: reglages.lecteur === cle, disabled: !disponible });
+      radio.addEventListener("change", () => choisirLecteur(cle));
+      label.append(radio, document.createTextNode(noms[cle] + (disponible ? "" : " " + t("non_trouve"))));
+      liste.appendChild(label);
+    });
+    $("lecteur-actuel").textContent = t("lect_actuel", { nom: noms[reglages.lecteur_actif] || "" });
+    $("base-info").textContent = reglages.base ? t("base_label", { chemin: reglages.base }) : "";
+    $("vlc-chemin").value = reglages.vlc_chemin || "";
+    $("tmdb-statut").textContent = reglages.tmdb_ok ? t("tmdb_present") : t("tmdb_absente");
+    if (!reglages.lecteurs) $("lecteur-actuel").textContent = t("serveur_ancien");
+
+    const langues = $("liste-langues");
+    langues.innerHTML = "";
+    LANGUES.forEach(([code, nom]) => {
+      const b = document.createElement("button");
+      b.className = "langue-btn" + (code === lang ? " actif" : "");
+      b.textContent = nom;
+      b.addEventListener("click", () => changerLangue(code));
+      langues.appendChild(b);
+    });
+  }
+
+  async function choisirLecteur(cle) {
+    try {
+      reglages = await api("/api/reglages", { lecteur: cle });
+      afficherReglages();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  }
+
+  async function changerLangue(code) {
+    lang = code;
+    try { reglages = await api("/api/reglages", { langue: code }); } catch (e) {}
+    appliquerTraductions();
+    construireOnglets();
+    construireGenres();
+    afficherGrille();
+    afficherReglages();
+    remplirCategories();
+    afficherDossiers();
+  }
+
+  function remplirCategories() {
+    const s = $("nouvelle-categorie");
+    s.innerHTML = "";
+    CATEGORIES.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c; o.textContent = nomCategorie(c);
+      s.appendChild(o);
+    });
+  }
+
+  async function chargerDossiers() {
+    dossiers = await api("/api/dossiers");
+    afficherDossiers();
+  }
+
+  function afficherDossiers() {
+    const liste = $("liste-dossiers");
+    liste.innerHTML = "";
+    if (dossiers.length === 0) {
+      liste.innerHTML = `<div class="msg">${escapeHtml(t("aucun_dossier"))}</div>`;
+      return;
+    }
+    dossiers.forEach(d => {
+      const ligne = document.createElement("div");
+      ligne.className = "ligne-dossier";
+      ligne.innerHTML = `<span class="pill">${escapeHtml(nomCategorie(d.categorie))}</span>
+        <span class="chemin" title="${escapeHtml(d.chemin)}">${escapeHtml(d.chemin)}</span>
+        <button class="bouton petit discret" data-scan="${d.id}">${escapeHtml(t("scanner"))}</button>
+        <button class="bouton petit discret" data-suppr="${d.id}">✕</button>`;
+      liste.appendChild(ligne);
+    });
+    liste.querySelectorAll("[data-scan]").forEach(b => b.addEventListener("click", () => scanner(b.dataset.scan)));
+    liste.querySelectorAll("[data-suppr]").forEach(b => b.addEventListener("click", () => supprimerDossier(b.dataset.suppr)));
+  }
+
+  async function scanner(id) {
+    $("msg-dossiers").textContent = t("scan_en_cours");
+    try {
+      const r = await api("/api/scan", { id: Number(id) });
+      $("msg-dossiers").textContent = t("scan_ok", { n: r.ajoutes });
+      await chargerFilms();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  }
+
+  async function supprimerDossier(id) {
+    if (!confirm(t("supprimer_dossier"))) return;
+    try {
+      await api("/api/dossiers/supprimer", { id: Number(id) });
+      await chargerDossiers();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  }
+
+  $("btn-reglages").addEventListener("click", () => {
+    afficherReglages();
+    chargerDossiers().catch(() => {});
+    $("overlay-reglages").classList.add("ouvert");
+  });
+  $("fermer-reglages").addEventListener("click", () => $("overlay-reglages").classList.remove("ouvert"));
+  $("overlay-reglages").addEventListener("click", e => {
+    if (e.target === $("overlay-reglages")) $("overlay-reglages").classList.remove("ouvert");
+  });
+
+  $("btn-tmdb-cle").addEventListener("click", async () => {
+    try {
+      reglages = await api("/api/reglages", { tmdb_cle: $("tmdb-cle").value.trim() });
+      $("tmdb-cle").value = "";
+      afficherReglages();
+      $("msg-dossiers").textContent = t("tmdb_enregistree");
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  });
+
+  $("btn-vlc-chemin").addEventListener("click", async () => {
+    try {
+      reglages = await api("/api/reglages", { vlc_chemin: $("vlc-chemin").value.trim() });
+      afficherReglages();
+      $("msg-dossiers").textContent = t("vlc_chemin_ok");
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  });
+
+  $("btn-ajouter-dossier").addEventListener("click", async () => {
+    const chemin = $("nouveau-chemin").value.trim();
+    if (!chemin) { $("msg-dossiers").textContent = t("indique_chemin"); return; }
+    try {
+      await api("/api/dossiers/ajouter", { chemin, categorie: $("nouvelle-categorie").value });
+      $("nouveau-chemin").value = "";
+      $("msg-dossiers").textContent = t("dossier_ajoute");
+      await chargerDossiers();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  });
+  $("btn-scan-tous").addEventListener("click", async () => {
+    $("msg-dossiers").textContent = t("scan_tous_en_cours");
+    try {
+      const r = await api("/api/scan-tous", {});
+      $("msg-dossiers").textContent = t("scan_ok", { n: r.ajoutes });
+      await chargerFilms();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  });
+  $("btn-manquants").addEventListener("click", async () => {
+    $("msg-dossiers").textContent = t("manq_en_cours");
+    try {
+      const r = await api("/api/infos-manquantes", {});
+      $("msg-dossiers").textContent = t("manq_ok", { n: r.completes, e: r.echecs });
+      await chargerFilms();
+    } catch (e) { $("msg-dossiers").textContent = e.message; }
+  });
+
+  // ---------- PREMIER LANCEMENT ----------
+  let choixLangue = "fr";
+  let choixLecteur = "vlc_pc";
+
+  function afficherPremierLancement() {
+    const langues = $("pl-langues");
+    langues.innerHTML = "";
+    LANGUES.forEach(([code, nom]) => {
+      const b = document.createElement("button");
+      b.className = "langue-btn" + (code === choixLangue ? " actif" : "");
+      b.textContent = nom;
+      b.addEventListener("click", () => {
+        choixLangue = code;
+        lang = code;
+        appliquerTraductions();
+        afficherPremierLancement();
+      });
+      langues.appendChild(b);
+    });
+
+    const liste = $("pl-lecteurs");
+    liste.innerHTML = "";
+    const lecteurs = reglages.lecteurs || {};
+    const noms = nomsLecteurs();
+    if (!lecteurs[choixLecteur]) choixLecteur = "defaut";
+    ["vlc_pc", "vlc_portable", "defaut"].forEach(cle => {
+      const disponible = !!lecteurs[cle];
+      const label = document.createElement("label");
+      label.className = "option" + (disponible ? "" : " off");
+      const radio = Object.assign(document.createElement("input"), {
+        type: "radio", name: "pl-lecteur", value: cle, checked: choixLecteur === cle, disabled: !disponible });
+      radio.addEventListener("change", () => { choixLecteur = cle; });
+      label.append(radio, document.createTextNode(noms[cle] + (disponible ? "" : " " + t("non_trouve"))));
+      liste.appendChild(label);
+    });
+    $("overlay-premier").classList.add("ouvert");
+  }
+
+  $("pl-continuer").addEventListener("click", async () => {
+    try {
+      reglages = await api("/api/reglages", { langue: choixLangue, lecteur: choixLecteur });
+      $("overlay-premier").classList.remove("ouvert");
+      appliquerTraductions();
+      construireOnglets();
+      construireGenres();
+      afficherGrille();
+    } catch (e) { alert(e.message); }
+  });
+
+  // ---------- DÉMARRAGE ----------
+  recherche.addEventListener("input", afficherGrille);
+
+  (async () => {
+    try { reglages = await api("/api/reglages"); } catch (e) { reglages = {}; }
+    lang = reglages.langue || "fr";
+    choixLangue = lang;
+    choixLecteur = reglages.lecteur || "vlc_pc";
+    appliquerTraductions();
+    remplirCategories();
+    construireOnglets();
+    chargerDossiers().catch(() => {});
+    chargerFilms().catch(e => { compte.textContent = "Erreur de connexion au serveur : " + e.message; });
+    if (reglages.premier_lancement) afficherPremierLancement();
+  })();
+</script>
+</body>
+</html>

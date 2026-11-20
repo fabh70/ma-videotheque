@@ -1,0 +1,52 @@
+MA VIDEOTHEQUE
+==============
+
+DEUX FACONS DE LANCER L'APPLI
+-----------------------------
+1. Version portable (recommandee, aucune installation)
+   - Decompresse MaVideotheque_Portable.zip ou copie le dossier
+     MaVideotheque_Portable ou tu veux (cle USB, disque dur...).
+   - Double-clique sur Videotheque.exe.
+   - Tes donnees (base + jaquettes) restent dans le sous-dossier "donnees"
+     du dossier portable. Rien n'est ecrit ailleurs.
+   - VLC est inclus dans le sous-dossier "VLC" : la lecture fonctionne
+     meme si VLC n'est pas installe sur le PC.
+
+2. Version installee (Setup_MaVideotheque.exe)
+   - Lance le Setup, suis l'assistant, puis ouvre "Ma Videotheque"
+     depuis le menu Demarrer ou le Bureau.
+
+PREMIER LANCEMENT
+-----------------
+- Choisis ta langue et ton lecteur video.
+- Ouvre les Parametres (bouton engrenage) et colle TA cle TMDB.
+  Cle gratuite : https://www.themoviedb.org (Parametres > API).
+- Ajoute tes dossiers de films, puis clique sur "Scanner tous les dossiers".
+
+WINDOWS AFFICHE "EDITEUR INCONNU"
+---------------------------------
+C'est normal : l'exe n'est pas signe numeriquement (un certificat coute
+plusieurs centaines d'euros par an). Clique sur "Informations
+complementaires" puis "Executer quand meme".
+
+CONFIGURATION
+-------------
+- Bureau\Videotheque : utilise automatiquement si ce dossier existe
+  (version installee). En version portable, le dossier "donnees" de
+  l'appli est toujours prioritaire.
+- TMDB : necessaire pour les jaquettes et les resumes.
+- VLC : VLC installe, sinon VLC portable inclus, sinon lecteur par defaut.
+
+FICHIERS
+--------
+Videotheque.exe          L'application (un seul fichier)
+portable.flag            Active le mode portable (ne pas supprimer)
+donnees\videotheque.db   Ta base de films
+donnees\jaquettes\       Les images telechargees
+VLC\vlc.exe              Lecteur video portable inclus
+
+LICENCES
+--------
+VLC est distribue sous licence GPLv2+ (voir VLC\COPYING.txt).
+Code source : https://www.videolan.org/vlc/
+Le reste de l'application est distribue par FabR1.

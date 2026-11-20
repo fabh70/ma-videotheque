@@ -1,0 +1,26 @@
+# Données personnelles
+donnees/
+*.db
+
+# VLC portable (téléchargé automatiquement par GitHub Actions)
+VLC/
+vlc-3.0.21/
+
+# Sorties de construction
+build/
+dist/
+output/
+*.spec
+MaVideotheque_Portable/
+MaVideotheque_Portable.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Divers
+Thumbs.db
+desktop.ini
+MaVideotheque_Depot_GitHub.zip
