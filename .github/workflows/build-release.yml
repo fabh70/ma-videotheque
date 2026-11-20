@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Recuperer le depot
@@ -33,27 +34,52 @@ jobs:
           --name Videotheque --icon logo.ico
           --add-data "index.html;." videotheque_app.py
 
-      - name: Telecharger VLC portable
-        shell: pwsh
+      - name: Telecharger et extraire VLC portable
+        shell: python
         run: |
-          $url = "https://get.videolan.org/vlc/3.0.21/win64/vlc-3.0.21-win64.zip"
-          Invoke-WebRequest -Uri $url -OutFile vlc.zip
-          Expand-Archive -Path vlc.zip -DestinationPath vlc-temp -Force
-          New-Item -ItemType Directory -Path VLC -Force | Out-Null
-          Copy-Item -Path "vlc-temp\vlc-3.0.21\*" -Destination VLC -Recurse -Force
-          Remove-Item vlc.zip, vlc-temp -Recurse -Force
+          import os
+          import shutil
+          import urllib.request
+          import zipfile
+
+          url = "https://get.videolan.org/vlc/3.0.21/win64/vlc-3.0.21-win64.zip"
+          urllib.request.urlretrieve(url, "vlc.zip")
+
+          with zipfile.ZipFile("vlc.zip") as archive:
+              archive.extractall("vlc-temp")
+
+          source = os.path.join("vlc-temp", "vlc-3.0.21")
+          os.makedirs("VLC", exist_ok=True)
+          for name in os.listdir(source):
+              shutil.move(os.path.join(source, name), os.path.join("VLC", name))
+
+          os.remove("vlc.zip")
+          shutil.rmtree("vlc-temp")
+          print("VLC pret :", os.path.isfile(os.path.join("VLC", "vlc.exe")))
 
       - name: Creer la version portable
-        shell: pwsh
+        shell: python
         run: |
-          $dest = "MaVideotheque_Portable"
-          New-Item -ItemType Directory -Path "$dest\donnees" -Force | Out-Null
-          Copy-Item "dist\Videotheque.exe" $dest
-          Copy-Item "LISEZMOI.txt" $dest
-          Copy-Item "logo.ico" $dest
-          Set-Content -Path "$dest\portable.flag" -Value "portable" -NoNewline
-          Copy-Item "VLC" "$dest\VLC" -Recurse
-          Compress-Archive -Path $dest -DestinationPath "MaVideotheque_Portable.zip" -Force
+          import os
+          import shutil
+          import zipfile
+
+          dest = "MaVideotheque_Portable"
+          os.makedirs(os.path.join(dest, "donnees"), exist_ok=True)
+          shutil.copy2(os.path.join("dist", "Videotheque.exe"), dest)
+          shutil.copy2("LISEZMOI.txt", dest)
+          shutil.copy2("logo.ico", dest)
+          with open(os.path.join(dest, "portable.flag"), "w", encoding="utf-8") as handle:
+              handle.write("portable")
+          shutil.copytree("VLC", os.path.join(dest, "VLC"))
+
+          with zipfile.ZipFile("MaVideotheque_Portable.zip", "w",
+                               zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+              for root, _dirs, files in os.walk(dest):
+                  for name in files:
+                      full = os.path.join(root, name)
+                      archive.write(full, os.path.relpath(full, "."))
+          print("Archive portable prete")
 
       - name: Publier les artefacts de compilation
         uses: actions/upload-artifact@v4
