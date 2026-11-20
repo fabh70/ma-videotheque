@@ -81,6 +81,22 @@ jobs:
                       archive.write(full, os.path.relpath(full, "."))
           print("Archive portable prete")
 
+      - name: Installer Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Construire l'installeur avec VLC
+        shell: pwsh
+        run: |
+          $iscc = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe",
+            "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe introuvable" }
+          & $iscc installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Echec de la compilation Inno Setup" }
+
       - name: Publier les artefacts de compilation
         uses: actions/upload-artifact@v4
         with:
@@ -88,6 +104,7 @@ jobs:
           path: |
             dist/Videotheque.exe
             MaVideotheque_Portable.zip
+            output/Setup_*.exe
 
       - name: Publier la Release GitHub
         if: startsWith(github.ref, 'refs/tags/')
@@ -96,4 +113,5 @@ jobs:
           files: |
             dist/Videotheque.exe
             MaVideotheque_Portable.zip
+            output/Setup_*.exe
           generate_release_notes: true

@@ -29,6 +29,13 @@ Name: "bureau"; Description: "Créer une icône sur le Bureau"; GroupDescription
 [Files]
 Source: "dist\Videotheque.exe"; DestDir: "{app}"; Flags: ignoreversion
 
+; VLC portable inclus (dossier VLC en CI, ou vlc-3.0.21 en local)
+#if DirExists("VLC")
+Source: "VLC\*"; DestDir: "{app}\VLC"; Flags: ignoreversion recursesubdirs createallsubdirs
+#elif DirExists("vlc-3.0.21")
+Source: "vlc-3.0.21\*"; DestDir: "{app}\VLC"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
 [Icons]
 Name: "{group}\Ma Vidéothèque"; Filename: "{app}\Videotheque.exe"
 Name: "{group}\Désinstaller Ma Vidéothèque"; Filename: "{uninstallexe}"

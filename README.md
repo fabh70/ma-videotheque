@@ -12,7 +12,7 @@ Deux versions sont disponibles dans l'onglet **Releases** de ce dépôt :
 | --- | --- |
 | `MaVideotheque_Portable.zip` | **Recommandé.** À décompresser n'importe où (clé USB incluse). VLC est fourni. Aucune installation, aucune donnée écrite ailleurs. |
 | `Videotheque.exe` | L'application seule. Pratique si VLC est déjà installé sur le PC. |
-| `Setup_MaVideotheque.exe` | Installeur classique (menu Démarrer + raccourci Bureau). |
+| `Setup_MaVideotheque.exe` | Installeur classique avec VLC inclus (menu Démarrer, raccourci Bureau et désinstalleur). |
 
 > Windows peut afficher « Éditeur inconnu » : clique sur **Informations
 > complémentaires** puis **Exécuter quand même**. L'exe n'est pas signé
