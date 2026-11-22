@@ -80,6 +80,7 @@ Produit `MaVideotheque_Portable\` et `MaVideotheque_Portable.zip`
 
 Pour l'installeur : ouvrir `installer.iss` avec
 [Inno Setup](https://jrsoftware.org/isinfo.php) puis compiler (F9).
+VLC est inclus automatiquement si le dossier `VLC\` ou `vlc-3.0.21\` est présent.
 
 Les Releases GitHub sont aussi générées automatiquement par
 `.github/workflows/build-release.yml` lorsqu'un tag `v*` est poussé.
