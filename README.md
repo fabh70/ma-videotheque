@@ -1,12 +1,14 @@
 # Ma Vidéothèque
 
+**Français** | [English](README.en.md) | [Nederlands](README.nl.md)
+
 Application locale pour organiser tes films, séries, dessins animés et spectacles.
 Elle lit tes fichiers vidéo dans tes propres dossiers, récupère les jaquettes et les
 résumés, et lance les films dans VLC ou dans le lecteur par défaut de Windows.
 
 ## Téléchargement
 
-Deux versions sont disponibles dans l'onglet **Releases** de ce dépôt :
+Trois fichiers sont disponibles dans l'onglet **Releases** de ce dépôt :
 
 | Fichier | Description |
 | --- | --- |
